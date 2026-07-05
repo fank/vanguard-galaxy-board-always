@@ -47,7 +47,7 @@ jobs:
           fi
           echo "Publicized reference present: $path ($(du -h "$path" | cut -f1))"
 
-      - name: Build VGBoardAlways.dll
+      - name: Build VGBBoardAlways.dll
         run: dotnet build VGBBoardAlways/VGBBoardAlways.csproj -c Debug --nologo
 
       - name: Stage release layout
@@ -60,7 +60,7 @@ jobs:
           rm -rf "dist/${PKG_NAME}"
           mkdir -p "$PKG_DIR"
 
-          cp VGBBoardAlways/bin/Debug/netstandard2.1/VGBoardAlways.dll "$PKG_DIR/"
+          cp VGBBoardAlways/bin/Debug/netstandard2.1/VGBBoardAlways.dll "$PKG_DIR/"
           cp README.md "$PKG_DIR/"
           [ -f LICENSE ] && cp LICENSE "$PKG_DIR/" || true
 
