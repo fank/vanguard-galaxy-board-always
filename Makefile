@@ -1,0 +1,42 @@
+TFM      := netstandard2.1
+CONFIG   := Debug
+DLL      := VGBBoardAlways.dll
+
+BUILDDIR := VGBBoardAlways/bin/$(CONFIG)/$(TFM)
+BUILDDLL := $(BUILDDIR)/$(DLL)
+
+GAME_DIR := /mnt/c/Program Files (x86)/Steam/steamapps/common/Vanguard Galaxy
+PLUGIN_DIR := $(GAME_DIR)/BepInEx/plugins
+
+DOTNET   ?= $(shell command -v dotnet 2>/dev/null || echo /tmp/dnsdk/dotnet/dotnet)
+
+.PHONY: all build link-asm clean deploy check-bepinex
+
+all: build
+
+check-bepinex:
+	@test -d "$(GAME_DIR)/BepInEx/plugins" || { \
+		echo "BepInEx plugins dir not found at $(GAME_DIR)/BepInEx/plugins." ; \
+		echo "Install BepInEx 5.x into the game folder and launch the game once." ; \
+		exit 1 ; \
+	}
+
+link-asm:
+	@mkdir -p VGBBoardAlways/lib
+	@if [ ! -e "VGBBoardAlways/lib/Assembly-CSharp.dll" ]; then \
+		ln -sf "$(GAME_DIR)/VanguardGalaxy_Data/Managed/Assembly-CSharp.dll" VGBBoardAlways/lib/Assembly-CSharp.dll ; \
+		echo "Linked Assembly-CSharp.dll" ; \
+	fi
+
+build: link-asm
+	DOTNET_ROOT=$(dir $(DOTNET)) $(DOTNET) build VGBBoardAlways/VGBBoardAlways.csproj -c $(CONFIG)
+
+deploy: build check-bepinex
+	@mkdir -p "$(PLUGIN_DIR)"
+	cp "$(BUILDDLL)" "$(PLUGIN_DIR)/"
+	@if [ -f "$(BUILDDIR)/VGBBoardAlways.pdb" ]; then cp "$(BUILDDIR)/VGBBoardAlways.pdb" "$(PLUGIN_DIR)/"; fi
+	@echo "Deployed $(DLL) to $(PLUGIN_DIR)"
+
+clean:
+	$(DOTNET) clean VGBBoardAlways/VGBBoardAlways.csproj
+	rm -rf VGBBoardAlways/bin VGBBoardAlways/obj
