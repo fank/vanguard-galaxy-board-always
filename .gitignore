@@ -1,4 +1,7 @@
 obj/
 bin/
-*.dll
 *.pdb
+# Build outputs — DLLs built locally are never committed.
+# Exception: publicized stubs in lib/ (method signatures only, no IL).
+*.dll
+!VGBBoardAlways/lib/*.dll

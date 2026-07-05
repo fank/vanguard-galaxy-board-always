@@ -3,12 +3,10 @@ name: Package release
 # Triggers when a GitHub Release is published. Also runnable manually.
 #
 # The plugin references Assembly-CSharp.dll (the game's proprietary
-# assembly) which can't live on a public runner. The Makefile links it
-# from the game install for local builds; for CI we verify the DLL
-# compiles against the BepInEx/Unity NuGet surface alone (the game
-# assembly is only needed for types sprinkled across the codebase).
-# If compilation ever requires the stub, commit a publicized copy at
-# VGBBoardAlways/lib/Assembly-CSharp.dll (method signatures only, no IL).
+# assembly) which can't live on a public runner. The repo commits a
+# PUBLICIZED stub (method signatures only, no IL) at
+# VGBBoardAlways/lib/Assembly-CSharp.dll. CI compiles against the stub;
+# the real runtime assembly takes over in-game via Mono's late binding.
 
 on:
   release:
@@ -40,17 +38,14 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Prepare lib stub
+      - name: Verify publicized stub is committed
         run: |
-          mkdir -p VGBBoardAlways/lib
-          # Create a minimal placeholder so dotnet restore/build don't fail
-          # on the Assembly-CSharp reference. The real DLL takes over at
-          # runtime. If compilation ever needs actual types from the game
-          # assembly, commit a publicized stub here.
-          if [ ! -s VGBBoardAlways/lib/Assembly-CSharp.dll ]; then
-            echo "::warning::Assembly-CSharp.dll stub missing — creating placeholder"
-            printf '' > VGBBoardAlways/lib/Assembly-CSharp.dll
+          path="VGBBoardAlways/lib/Assembly-CSharp.dll"
+          if [ ! -s "$path" ]; then
+            echo "::error::$path is missing or empty. Regenerate via 'assembly-publicizer --strip <game>/Assembly-CSharp.dll -o $path' and commit. (--strip is required.)"
+            exit 1
           fi
+          echo "Publicized reference present: $path ($(du -h "$path" | cut -f1))"
 
       - name: Build VGBoardAlways.dll
         run: dotnet build VGBBoardAlways/VGBBoardAlways.csproj -c Debug --nologo
