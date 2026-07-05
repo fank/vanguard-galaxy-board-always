@@ -55,7 +55,9 @@ jobs:
         run: |
           VERSION=$(grep 'PluginVersion =' VGBBoardAlways/Plugin.cs | head -1 | sed 's/.*"\(.*\)".*/\1/')
           PKG_NAME="VGBoardAlways-v${VERSION}"
-          PKG_DIR="dist/${PKG_NAME}"
+          # Nested VGBoardAlways/ is intentional: it's the folder the user drops
+          # into BepInEx/plugins/.
+          PKG_DIR="dist/${PKG_NAME}/VGBoardAlways"
 
           rm -rf "dist/${PKG_NAME}"
           mkdir -p "$PKG_DIR"
@@ -71,7 +73,8 @@ jobs:
 
       - name: Zip release bundle
         run: |
-          (cd dist && zip -qr "${{ steps.stage.outputs.pkg_name }}.zip" "${{ steps.stage.outputs.pkg_name }}")
+          (cd "dist/${{ steps.stage.outputs.pkg_name }}" && \
+             zip -qr "../${{ steps.stage.outputs.pkg_name }}.zip" VGBoardAlways)
           ls -lh "dist/${{ steps.stage.outputs.pkg_name }}.zip"
 
       - name: Upload zip to release
